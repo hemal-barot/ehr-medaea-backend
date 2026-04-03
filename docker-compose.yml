@@ -1,0 +1,84 @@
+version: "3.9"
+
+# ── ehr-medaea-backend — Docker Compose ───────────────────────────────────────
+# Quick start:
+#   cp .env.example .env
+#   docker compose up --build
+#
+# First-time Django superuser:
+#   docker compose exec django python django_app/manage.py createsuperuser
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-medaea}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medaea_secret}
+      POSTGRES_DB:       ${POSTGRES_DB:-medaea_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medaea} -d ${POSTGRES_DB:-medaea_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:                postgresql://${POSTGRES_USER:-medaea}:${POSTGRES_PASSWORD:-medaea_secret}@db:5432/${POSTGRES_DB:-medaea_db}
+      SECRET_KEY:                  ${SECRET_KEY:-supersecretkey_change_in_production}
+      ALGORITHM:                   ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-11520}
+      ENVIRONMENT:                 ${ENVIRONMENT:-production}
+      DEBUG:                       ${DEBUG:-false}
+      BACKEND_CORS_ORIGINS:        ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      FRONTEND_URL:                ${FRONTEND_URL:-http://localhost:3000}
+      MFA_ENCRYPTION_KEY:          ${MFA_ENCRYPTION_KEY:-b7-PqUqy4_k2zPUHRpsL2PUWmXglTjdBpOZibh6CT7Q=}
+      REQUIRE_EMAIL_VERIFICATION:  ${REQUIRE_EMAIL_VERIFICATION:-false}
+      SMTP_HOST:                   ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT:                   ${SMTP_PORT:-587}
+      SMTP_USER:                   ${SMTP_USER:-}
+      SMTP_PASSWORD:               ${SMTP_PASSWORD:-}
+      EMAILS_FROM_EMAIL:           ${EMAILS_FROM_EMAIL:-noreply@medaea.com}
+      TWILIO_ACCOUNT_SID:          ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN:           ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER:         ${TWILIO_PHONE_NUMBER:-}
+    ports:
+      - "${FASTAPI_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./fastapi_app:/app/fastapi_app
+      - ./scripts:/app/scripts
+      - uploads_data:/app/uploads
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:         postgresql://${POSTGRES_USER:-medaea}:${POSTGRES_PASSWORD:-medaea_secret}@db:5432/${POSTGRES_DB:-medaea_db}
+      DJANGO_SECRET_KEY:    ${DJANGO_SECRET_KEY:-django-insecure-change-in-production}
+      DJANGO_DEBUG:         ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+    ports:
+      - "${DJANGO_PORT:-9000}:9000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./django_app:/app/django_app
+
+volumes:
+  postgres_data:
+  uploads_data:

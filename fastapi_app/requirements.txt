@@ -1,0 +1,40 @@
+# Medaea EHR — FastAPI Backend Dependencies
+# Pinned to versions verified in production; rebuild Docker images after any change.
+# Install: pip install -r backend/fastapi_app/requirements.txt
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.135.2
+uvicorn[standard]==0.42.0
+starlette==1.0.0
+python-multipart==0.0.22
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.48
+psycopg2-binary==2.9.11
+alembic==1.14.0
+
+# ── Data validation & settings ────────────────────────────────────────────────
+pydantic==2.12.5
+pydantic-settings==2.13.1
+email-validator==2.3.0
+python-dotenv==1.2.2
+
+# ── Auth & security ───────────────────────────────────────────────────────────
+python-jose[cryptography]==3.5.0
+bcrypt==5.0.0
+passlib[bcrypt]==1.7.4
+cryptography==46.0.6
+
+# ── MFA (TOTP + QR code) ──────────────────────────────────────────────────────
+pyotp==2.9.0
+qrcode[pil]==8.2
+pillow==12.1.1
+
+# ── Email (async SMTP) ────────────────────────────────────────────────────────
+aiosmtplib==5.1.0
+
+# ── SMS / voice (Twilio) ──────────────────────────────────────────────────────
+twilio==9.10.4
+
+# ── HTTP client (webhooks, internal service calls) ────────────────────────────
+httpx==0.28.0

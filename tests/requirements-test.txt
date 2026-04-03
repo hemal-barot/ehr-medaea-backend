@@ -1,0 +1,7 @@
+# Test dependencies for the FastAPI backend
+# Install: pip install -r backend/tests/requirements-test.txt
+
+pytest==8.3.4
+pytest-asyncio==0.24.0
+httpx==0.28.0
+behave==1.2.6
